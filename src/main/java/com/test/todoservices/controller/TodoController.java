@@ -10,6 +10,7 @@ import javax.validation.Valid;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.test.todoservices.dto.TodoRequest;
 import com.test.todoservices.exception.ResourceNotFoundException;
+import com.test.todoservices.model.Tag;
 import com.test.todoservices.model.Todo;
 import com.test.todoservices.repository.TagRepository;
 import com.test.todoservices.repository.TodoRepository;
@@ -97,8 +98,8 @@ public class TodoController {
       
         List<Todo> listTodo = this.todoRepository.findAll();
         if(listTodo != null){
-            
-            return ResponseEntity.status(HttpStatus.OK).body(listTodo.stream().map(this::convertToDto).collect(Collectors.toList()));
+
+            return ResponseEntity.status(HttpStatus.OK).body(MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(listTodo));
         }
         return ResponseEntity.status(HttpStatus.OK).body(new String("{}"));
     }
