@@ -1,7 +1,9 @@
 package com.test.todoservices.controller;
 
+import java.beans.FeatureDescriptor;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.validation.Valid;
 
@@ -11,6 +13,9 @@ import com.test.todoservices.exception.ResourceNotFoundException;
 import com.test.todoservices.model.Tag;
 import com.test.todoservices.repository.TagRepository;
 
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.BeanWrapper;
+import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,25 +36,26 @@ public class TagController {
 	@CrossOrigin(origins = "*")
     @RequestMapping(value="/app/tag", method = RequestMethod.POST)
     public ResponseEntity<?> addTag(@Valid @RequestBody TagRequest tagReq) throws Exception {
-          
-        Tag tag = MAPPER.convertValue(tagReq, Tag.class); 
-	    this.tagRepository.save(tag);
+        Tag newTag = new Tag(); 
+        BeanUtils.copyProperties(tagReq, newTag);
+        
+	    this.tagRepository.save(newTag);
             
-        return ResponseEntity.status(HttpStatus.CREATED).body(convertToDto(tag));
+        return ResponseEntity.status(HttpStatus.CREATED).body(newTag);
     }
 
     @CrossOrigin(origins = "*")
     @RequestMapping(value="/app/tag/{id}", method = RequestMethod.PUT)
-    public ResponseEntity<?> editTag(@PathVariable Integer id) throws Exception {
+    public ResponseEntity<?> editTag(@PathVariable Integer id, @Valid @RequestBody TagRequest tagReq) throws Exception {
        
         Tag existTag = this.tagRepository.findById(id).orElse(null);
         if(existTag == null){
             throw new ResourceNotFoundException();
         } else {
-            // existTag = MAPPER.convertValue(tagReq, Tag.class);
+            BeanUtils.copyProperties(tagReq, existTag, getNullPropertyNames(tagReq));
             this.tagRepository.save(existTag);
 
-            return ResponseEntity.status(HttpStatus.OK).body(convertToDto(existTag));
+            return ResponseEntity.status(HttpStatus.OK).body(existTag);
         }
     }
 
@@ -61,7 +67,7 @@ public class TagController {
         if(tag == null){
             throw new ResourceNotFoundException();
         } else {
-            return ResponseEntity.status(HttpStatus.OK).body(convertToDto(tag));
+            return ResponseEntity.status(HttpStatus.OK).body(tag);
         }
     }
   
@@ -69,24 +75,16 @@ public class TagController {
     @RequestMapping(value="/app/tag/{id}", method = RequestMethod.DELETE)
     public ResponseEntity<?> deleteTag(@PathVariable Integer id) throws Exception {
 
-            Tag existTag = this.tagRepository.findById(id).orElse(null);
-            if(existTag == null){
-                throw new ResourceNotFoundException();
-            } else {
-                // existTag.setIsActive(false);
-                this.tagRepository.save(existTag);
+        Tag existTag = this.tagRepository.findById(id).orElse(null);
+        if(existTag == null){
+            throw new ResourceNotFoundException();
+        } else {
+            existTag.setIsActive(false);
+            this.tagRepository.save(existTag);
 
-                return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
-            }
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
+        }
     }
-
-    private TagRequest convertToDto(Tag tag) {
-        // ModelMapper modelMapper = new ModelMapper();
-        // TagRequest tagResponse = modelMapper.map(tag, TagRequest.class);
-        TagRequest tagResponse = MAPPER.convertValue(tag, TagRequest.class);
-        return tagResponse;
-    }
-
 
     @CrossOrigin(origins = "*")
     @RequestMapping(value="/app/tags", method = RequestMethod.GET)
@@ -99,5 +97,24 @@ public class TagController {
         }
         return ResponseEntity.status(HttpStatus.OK).body(new String("{}"));
     }
+
+    private TagRequest convertToDto(Tag tag) {
+        TagRequest tagResponse = MAPPER.convertValue(tag, TagRequest.class);
+        return tagResponse;
+    }
+
+    public static String[] getNullPropertyNames(Object source) {
+	    final BeanWrapper wrappedSource = new BeanWrapperImpl(source);
+	    return Stream.of(wrappedSource.getPropertyDescriptors())
+	        .map(FeatureDescriptor::getName)
+	        .filter(propertyName -> {
+	            try {
+	               return wrappedSource.getPropertyValue(propertyName) == null;
+	            } catch (Exception e) {
+	               return false;
+	            }                
+	        })
+	        .toArray(String[]::new);
+	}
 
 }

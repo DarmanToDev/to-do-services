@@ -4,23 +4,24 @@ import java.sql.Timestamp;
 
 import javax.validation.constraints.NotNull;
 
-import lombok.Getter;
-import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
+import lombok.Data;
+
+@Data
 public class TagRequest {
-	@Setter @Getter 
 	private Integer id;
 
-	@Setter @Getter @NotNull 
+	@JsonProperty("name") @NotNull
 	private String name;
-
-	@Setter @Getter @NotNull
+	
+	@JsonProperty("is_active")
 	private Boolean isActive;
 
-	@Setter @Getter @NotNull
+	@JsonProperty("created_at")
 	private Timestamp createdAt;
 
-	@Setter @Getter @NotNull
+	@JsonProperty("updated_at")
 	private Timestamp updatedAt;
 
 }
