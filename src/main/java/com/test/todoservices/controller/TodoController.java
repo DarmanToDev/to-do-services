@@ -1,7 +1,9 @@
 package com.test.todoservices.controller;
 
+import java.beans.FeatureDescriptor;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.validation.Valid;
 
@@ -11,6 +13,9 @@ import com.test.todoservices.exception.ResourceNotFoundException;
 import com.test.todoservices.model.Todo;
 import com.test.todoservices.repository.TodoRepository;
 
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.BeanWrapper;
+import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,21 +37,22 @@ public class TodoController {
     @RequestMapping(value="/app/todo", method = RequestMethod.POST)
     public ResponseEntity<?> addTodo(@Valid @RequestBody TodoRequest todoReq) throws Exception {
           
-        Todo todo = MAPPER.convertValue(todoReq, Todo.class); 
-	    this.todoRepository.save(todo);
+        Todo newTodo = new Todo();
+        BeanUtils.copyProperties(todoReq, newTodo); 
+	    this.todoRepository.save(newTodo);
             
-        return ResponseEntity.status(HttpStatus.CREATED).body(convertToDto(todo));
+        return ResponseEntity.status(HttpStatus.CREATED).body(newTodo);
     }
 
     @CrossOrigin(origins = "*")
     @RequestMapping(value="/app/todo/{id}", method = RequestMethod.PUT)
-    public ResponseEntity<?> editTodo(@PathVariable Integer id) throws Exception {
+    public ResponseEntity<?> editTodo(@PathVariable Integer id, @Valid @RequestBody TodoRequest todoReq) throws Exception {
        
         Todo existTodo = this.todoRepository.findById(id).orElse(null);
         if(existTodo == null){
             throw new ResourceNotFoundException();
         } else {
-            // existTodo = MAPPER.convertValue(todoReq, Todo.class);
+            BeanUtils.copyProperties(todoReq, existTodo, getNullPropertyNames(todoReq));
             this.todoRepository.save(existTodo);
 
             return ResponseEntity.status(HttpStatus.OK).body(convertToDto(existTodo));
@@ -61,7 +67,7 @@ public class TodoController {
         if(todo == null){
             throw new ResourceNotFoundException();
         } else {
-            return ResponseEntity.status(HttpStatus.OK).body(convertToDto(todo));
+            return ResponseEntity.status(HttpStatus.OK).body(todo);
         }
     }
   
@@ -69,24 +75,16 @@ public class TodoController {
     @RequestMapping(value="/app/todo/{id}", method = RequestMethod.DELETE)
     public ResponseEntity<?> deleteTodo(@PathVariable Integer id) throws Exception {
 
-            Todo existTodo = this.todoRepository.findById(id).orElse(null);
-            if(existTodo == null){
-                throw new ResourceNotFoundException();
-            } else {
-                // existTodo.setIsActive(false);
-                this.todoRepository.save(existTodo);
+        Todo existTodo = this.todoRepository.findById(id).orElse(null);
+        if(existTodo == null){
+            throw new ResourceNotFoundException();
+        } else {
+            existTodo.setIsActive(false);
+            this.todoRepository.save(existTodo);
 
-                return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
-            }
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
+        }
     }
-
-    private TodoRequest convertToDto(Todo todo) {
-        // ModelMapper modelMapper = new ModelMapper();
-        // TodoRequest todoResponse = modelMapper.map(todo, TodoRequest.class);
-        TodoRequest todoResponse = MAPPER.convertValue(todo, TodoRequest.class);
-        return todoResponse;
-    }
-
 
     @CrossOrigin(origins = "*")
     @RequestMapping(value="/app/todos", method = RequestMethod.GET)
@@ -100,4 +98,23 @@ public class TodoController {
         return ResponseEntity.status(HttpStatus.OK).body(new String("{}"));
     }
 
+    private TodoRequest convertToDto(Todo todo) {
+        TodoRequest todoResponse = MAPPER.convertValue(todo, TodoRequest.class);
+        return todoResponse;
+    }
+
+    public static String[] getNullPropertyNames(Object source) {
+	    final BeanWrapper wrappedSource = new BeanWrapperImpl(source);
+	    return Stream.of(wrappedSource.getPropertyDescriptors())
+	        .map(FeatureDescriptor::getName)
+	        .filter(propertyName -> {
+	            try {
+	               return wrappedSource.getPropertyValue(propertyName) == null;
+	            } catch (Exception e) {
+	               return false;
+	            }                
+	        })
+	        .toArray(String[]::new);
+    }
+    
 }

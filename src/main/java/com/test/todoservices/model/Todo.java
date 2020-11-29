@@ -20,38 +20,40 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.Where;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity 
 @Table(name = "todos") 
 @Where(clause = "is_active = 1")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Todo {
 	
 	@Id 
 	@GeneratedValue(strategy = GenerationType.IDENTITY) 
 	@Column(name = "id")
-    @Setter @Getter private Integer id;
+	private Integer id;
 	
 	@Column(name = "name")
 	@NotNull
-    @Setter @Getter private String name;
+    private String name;
 	
 	@Column(name = "is_finished")
-	@NotNull
-	@Setter @Getter private Boolean isFinished = false;
+	private Boolean isFinished = false;
 
 	@Column(name = "is_active")
-	@NotNull
-	@Setter @Getter private Boolean isActive = true;
+	private Boolean isActive = true;
 	
 	@Column(name = "created_at") 
-	@NotNull @CreationTimestamp
-	@Setter @Getter private Timestamp createdAt;
+	@CreationTimestamp
+	private Timestamp createdAt;
 	
 	@Column(name = "updated_at") 
-	@NotNull @UpdateTimestamp
-	@Setter @Getter private Timestamp updatedAt;
+	@UpdateTimestamp
+	private Timestamp updatedAt;
 
 	@ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
