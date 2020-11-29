@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.test.todoservices.dto.TodoRequest;
 import com.test.todoservices.exception.ResourceNotFoundException;
 import com.test.todoservices.model.Todo;
+import com.test.todoservices.repository.TagRepository;
 import com.test.todoservices.repository.TodoRepository;
 
 import org.springframework.beans.BeanUtils;
@@ -31,7 +32,10 @@ public class TodoController {
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 	
 	@Autowired
-	private TodoRepository todoRepository;
+    private TodoRepository todoRepository;
+    
+    @Autowired
+	private TagRepository tagRepository;
 
 	@CrossOrigin(origins = "*")
     @RequestMapping(value="/app/todo", method = RequestMethod.POST)
@@ -39,6 +43,7 @@ public class TodoController {
           
         Todo newTodo = new Todo();
         BeanUtils.copyProperties(todoReq, newTodo); 
+        todoReq.getTags().stream().forEach(tag -> this.tagRepository.save(tag));
 	    this.todoRepository.save(newTodo);
             
         return ResponseEntity.status(HttpStatus.CREATED).body(newTodo);
